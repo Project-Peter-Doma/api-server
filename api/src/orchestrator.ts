@@ -1,6 +1,5 @@
 // api/src/orchestrator.ts
 
-// CORRECTED: Import ALL specialist agents
 import { runOnChainAnalyst } from './agents/onChainAnalyst.js';
 import { runWeb2AuthorityAnalyst } from './agents/web2AuthorityAnalyst.js';
 import { runMarketIntelligenceAgent } from './agents/marketIntelligenceAgent.js';
@@ -18,7 +17,6 @@ export async function runFullAnalysis(domain: string): Promise<FinalReport | nul
   try {
     console.log('[Orchestrator] Triggering all specialist agents in parallel...');
     
-    // CORRECTED: Added the missing function calls to Promise.allSettled
     const results = await Promise.allSettled([
       runOnChainAnalyst(domain),
       runWeb2AuthorityAnalyst(domain),
@@ -30,21 +28,19 @@ export async function runFullAnalysis(domain: string): Promise<FinalReport | nul
     console.log('[Orchestrator] All specialist agents have completed.');
 
     const createDefaultReport = (agentName: string, reason: string) => ({ status: "failure", agent_name: agentName, reason });
-
-    // CORRECTED: Correctly destructure the results array
-    const onChainReport = results[0].status === 'fulfilled' && results[0].value ? results[0].value : createDefaultReport('on_chain_analyst', 'Agent failed.');
-    const web2Report = results[1].status === 'fulfilled' && results[1].value ? results[1].value : createDefaultReport('web2_authority_analyst', 'Agent failed.');
-    const marketIntelReport = results[2].status === 'fulfilled' && results[2].value ? results[2].value : createDefaultReport('market_intelligence_agent', 'Agent failed.');
+    
+    const onChainReport = results[0].status === 'fulfilled' && results[0].value ? results[0].value : createDefaultReport('on_chain_analyst', 'Agent failed or domain not found on Doma.');
+    const web2Report = results[1].status === 'fulfilled' && results[1].value ? results[1].value : createDefaultReport('web2_authority_analyst', 'Agent failed to fetch Web2 data.');
+    const marketIntelReport = results[2].status === 'fulfilled' && results[2].value ? results[2].value : createDefaultReport('market_intelligence_agent', 'Agent failed to conduct research.');
     const momentumReport = results[3].status === 'fulfilled' && results[3].value ? results[3].value : createDefaultReport('live_momentum_agent', 'Agent failed.');
     const liquidityReport = results[4].status === 'fulfilled' && results[4].value ? results[4].value : createDefaultReport('liquidity_predictor_agent', 'Agent failed.');
     const compsReport = results[5].status === 'fulfilled' && results[5].value ? results[5].value : createDefaultReport('comparable_sales_agent', 'Agent failed.');
 
-    // --- Aggregation Phase ---
+    // CORRECTED: The prompt is now valid plain text.
     const aggregatorSystemPrompt = `
-      You are the final intelligence synthesizer for the 'Peter' platform.
-      You have been provided with multiple expert reports for '${domain}'.
-      Some reports may have failed. Your task is to intelligently synthesize all available information.
-      If a report has a status of "failure", you must acknowledge this and assign its scores a value of 0.
+      You are the final intelligence synthesizer for the 'Peter' platform for the domain '${domain}'.
+      Synthesize the provided expert reports into a final JSON object.
+      If a report has a status of "failure", acknowledge this and assign its scores a value of 0.
 
       **EXPERT REPORTS:**
       1. On-Chain Analyst: ${JSON.stringify(onChainReport, null, 2)}
@@ -55,10 +51,10 @@ export async function runFullAnalysis(domain: string): Promise<FinalReport | nul
       6. Comparable Sales: ${JSON.stringify(compsReport, null, 2)}
       
       **Your Synthesis Task:**
-      1.  **`executive_summary`**: Write a compelling, 3-4 sentence summary. If on-chain data is missing, state that it's a "traditional Web2 asset."
-      2.  **`peter_score`**: Calculate a final composite score (0-100) as a weighted average. Use this weighting: Market Trend (25%), Brandability (20%), On-Chain Health (20%), Predicted Liquidity (15%), SEO Authority (10%), Traffic (5%), Live Momentum (5%). Treat scores from failed reports as 0.
-      3.  Populate the 'scores' object. Use a value of 0 if a report failed. Note that the liquidity report gives a score from 1-10, not a probability.
-      4.  Populate the 'deep_dive' object by nesting the full content of each of the specialist reports.
+      - For the 'executive_summary', write a compelling, 3-4 sentence summary. If on-chain data is missing, state that it's a "traditional Web2 asset."
+      - For the 'peter_score', calculate a final composite score (0-100) as a weighted average. Weighting: Market Trend (25%), Brandability (20%), On-Chain Health (20%), Predicted Liquidity (15%), SEO Authority (10%), Traffic (5%), Live Momentum (5%). Use 0 for any missing scores.
+      - For the 'scores' object, populate it by extracting the relevant individual scores from each report. Use 0 for missing scores.
+      - For the 'deep_dive' object, populate it by nesting the full content of each specialist report.
     `;
 
     console.log('[Orchestrator] Sending reports to Aggregator Agent...');
