@@ -1,0 +1,31 @@
+{
+  "name": "peter-agents-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test:doma": "tsx watch ./test-doma.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@perplexity-ai/perplexity_ai": "^0.8.0",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.6.2",
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "together-ai": "^0.22.0",
+    "typescript": "^5.9.3",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.24.6"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6"
+  }
+}
